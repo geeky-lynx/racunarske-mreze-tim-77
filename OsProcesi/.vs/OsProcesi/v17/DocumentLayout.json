@@ -3,12 +3,8 @@
   "WorkspaceRootPath": "C:\\Users\\Win10RDP\\Documents\\Projekti\\racunarske-mreze-tim-77\\OsProcesi\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{FD626870-09E8-42F8-B75F-8D1555845668}|OsProcesi\\OsProcesi.csproj|c:\\users\\win10rdp\\documents\\projekti\\racunarske-mreze-tim-77\\osprocesi\\osprocesi\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{FD626870-09E8-42F8-B75F-8D1555845668}|OsProcesi\\OsProcesi.csproj|solutionrelative:osprocesi\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{D757F5EB-009C-496F-AC39-42982BAB1849}|Client\\Client.csproj|c:\\users\\win10rdp\\documents\\projekti\\racunarske-mreze-tim-77\\osprocesi\\client\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{D757F5EB-009C-496F-AC39-42982BAB1849}|Client\\Client.csproj|solutionrelative:client\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{FD626870-09E8-42F8-B75F-8D1555845668}|Server\\Server.csproj|c:\\users\\win10rdp\\documents\\projekti\\racunarske-mreze-tim-77\\osprocesi\\server\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{FD626870-09E8-42F8-B75F-8D1555845668}|Server\\Server.csproj|solutionrelative:server\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
   "DocumentGroupContainers": [
@@ -18,32 +14,19 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 1,
+          "SelectedChildIndex": 0,
           "Children": [
-            {
-              "$type": "Document",
-              "DocumentIndex": 1,
-              "Title": "Program.cs",
-              "DocumentMoniker": "C:\\Users\\Win10RDP\\Documents\\Projekti\\racunarske-mreze-tim-77\\OsProcesi\\Client\\Program.cs",
-              "RelativeDocumentMoniker": "Client\\Program.cs",
-              "ToolTip": "C:\\Users\\Win10RDP\\Documents\\Projekti\\racunarske-mreze-tim-77\\OsProcesi\\Client\\Program.cs",
-              "RelativeToolTip": "Client\\Program.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-02-03T19:27:05.318Z",
-              "EditorCaption": ""
-            },
             {
               "$type": "Document",
               "DocumentIndex": 0,
               "Title": "Program.cs",
-              "DocumentMoniker": "C:\\Users\\Win10RDP\\Documents\\Projekti\\racunarske-mreze-tim-77\\OsProcesi\\OsProcesi\\Program.cs",
-              "RelativeDocumentMoniker": "OsProcesi\\Program.cs",
-              "ToolTip": "C:\\Users\\Win10RDP\\Documents\\Projekti\\racunarske-mreze-tim-77\\OsProcesi\\OsProcesi\\Program.cs",
-              "RelativeToolTip": "OsProcesi\\Program.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAA==",
+              "DocumentMoniker": "C:\\Users\\Win10RDP\\Documents\\Projekti\\racunarske-mreze-tim-77\\OsProcesi\\Server\\Program.cs",
+              "RelativeDocumentMoniker": "Server\\Program.cs",
+              "ToolTip": "C:\\Users\\Win10RDP\\Documents\\Projekti\\racunarske-mreze-tim-77\\OsProcesi\\Server\\Program.cs",
+              "RelativeToolTip": "Server\\Program.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-01-26T17:54:55.219Z",
+              "WhenOpened": "2026-02-03T19:40:32.526Z",
               "EditorCaption": ""
             }
           ]
