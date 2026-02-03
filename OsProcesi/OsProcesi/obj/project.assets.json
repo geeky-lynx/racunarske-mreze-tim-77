@@ -8,23 +8,23 @@
     "net8.0": []
   },
   "packageFolders": {
-    "C:\\Users\\Marko\\.nuget\\packages\\": {},
+    "C:\\Users\\Win10RDP\\.nuget\\packages\\": {},
     "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "D:\\Faks\\racunarske-mreze-tim-77\\OsProcesi\\OsProcesi\\OsProcesi.csproj",
-      "projectName": "OsProcesi",
-      "projectPath": "D:\\Faks\\racunarske-mreze-tim-77\\OsProcesi\\OsProcesi\\OsProcesi.csproj",
-      "packagesPath": "C:\\Users\\Marko\\.nuget\\packages\\",
-      "outputPath": "D:\\Faks\\racunarske-mreze-tim-77\\OsProcesi\\OsProcesi\\obj\\",
+      "projectUniqueName": "C:\\Users\\Win10RDP\\Documents\\Projekti\\racunarske-mreze-tim-77\\OsProcesi\\OsProcesi\\Server.csproj",
+      "projectName": "Server",
+      "projectPath": "C:\\Users\\Win10RDP\\Documents\\Projekti\\racunarske-mreze-tim-77\\OsProcesi\\OsProcesi\\Server.csproj",
+      "packagesPath": "C:\\Users\\Win10RDP\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\Win10RDP\\Documents\\Projekti\\racunarske-mreze-tim-77\\OsProcesi\\OsProcesi\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
       ],
       "configFilePaths": [
-        "C:\\Users\\Marko\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Users\\Win10RDP\\AppData\\Roaming\\NuGet\\NuGet.Config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
@@ -72,7 +72,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.310/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.305/PortableRuntimeIdentifierGraph.json"
       }
     }
   }

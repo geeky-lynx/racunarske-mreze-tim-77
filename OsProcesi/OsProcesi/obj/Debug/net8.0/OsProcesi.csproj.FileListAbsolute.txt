@@ -1,0 +1,15 @@
+C:\Users\Win10RDP\Documents\Projekti\racunarske-mreze-tim-77\OsProcesi\OsProcesi\bin\Debug\net8.0\OsProcesi.exe
+C:\Users\Win10RDP\Documents\Projekti\racunarske-mreze-tim-77\OsProcesi\OsProcesi\bin\Debug\net8.0\OsProcesi.deps.json
+C:\Users\Win10RDP\Documents\Projekti\racunarske-mreze-tim-77\OsProcesi\OsProcesi\bin\Debug\net8.0\OsProcesi.runtimeconfig.json
+C:\Users\Win10RDP\Documents\Projekti\racunarske-mreze-tim-77\OsProcesi\OsProcesi\bin\Debug\net8.0\OsProcesi.dll
+C:\Users\Win10RDP\Documents\Projekti\racunarske-mreze-tim-77\OsProcesi\OsProcesi\bin\Debug\net8.0\OsProcesi.pdb
+C:\Users\Win10RDP\Documents\Projekti\racunarske-mreze-tim-77\OsProcesi\OsProcesi\obj\Debug\net8.0\OsProcesi.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Win10RDP\Documents\Projekti\racunarske-mreze-tim-77\OsProcesi\OsProcesi\obj\Debug\net8.0\OsProcesi.AssemblyInfoInputs.cache
+C:\Users\Win10RDP\Documents\Projekti\racunarske-mreze-tim-77\OsProcesi\OsProcesi\obj\Debug\net8.0\OsProcesi.AssemblyInfo.cs
+C:\Users\Win10RDP\Documents\Projekti\racunarske-mreze-tim-77\OsProcesi\OsProcesi\obj\Debug\net8.0\OsProcesi.csproj.CoreCompileInputs.cache
+C:\Users\Win10RDP\Documents\Projekti\racunarske-mreze-tim-77\OsProcesi\OsProcesi\obj\Debug\net8.0\OsProcesi.sourcelink.json
+C:\Users\Win10RDP\Documents\Projekti\racunarske-mreze-tim-77\OsProcesi\OsProcesi\obj\Debug\net8.0\OsProcesi.dll
+C:\Users\Win10RDP\Documents\Projekti\racunarske-mreze-tim-77\OsProcesi\OsProcesi\obj\Debug\net8.0\refint\OsProcesi.dll
+C:\Users\Win10RDP\Documents\Projekti\racunarske-mreze-tim-77\OsProcesi\OsProcesi\obj\Debug\net8.0\OsProcesi.pdb
+C:\Users\Win10RDP\Documents\Projekti\racunarske-mreze-tim-77\OsProcesi\OsProcesi\obj\Debug\net8.0\OsProcesi.genruntimeconfig.cache
+C:\Users\Win10RDP\Documents\Projekti\racunarske-mreze-tim-77\OsProcesi\OsProcesi\obj\Debug\net8.0\ref\OsProcesi.dll

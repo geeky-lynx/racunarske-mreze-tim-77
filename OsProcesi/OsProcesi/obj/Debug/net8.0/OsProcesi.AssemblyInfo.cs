@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("OsProcesi")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+9d058ef77190f60ed52abcfa8bd6745ba5c5def9")]
 [assembly: System.Reflection.AssemblyProductAttribute("OsProcesi")]
 [assembly: System.Reflection.AssemblyTitleAttribute("OsProcesi")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

@@ -1,0 +1,15 @@
+[
+  {
+    "Name": "Run All",
+    "Projects": [
+      {
+        "Path": "OsProcesi\\Server.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "Client\\Client.csproj",
+        "Action": "Start"
+      }
+    ]
+  }
+]
