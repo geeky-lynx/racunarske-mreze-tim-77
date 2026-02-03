@@ -3,7 +3,7 @@
     "Name": "Run All",
     "Projects": [
       {
-        "Path": "OsProcesi\\Server.csproj",
+        "Path": "Server\\Server.csproj",
         "Action": "Start"
       },
       {
