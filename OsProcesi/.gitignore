@@ -1,6 +1,9 @@
 .vs
 .vscode
 
+Common/bin
+Common/obj
+
 Client/bin
 Client/obj
 
