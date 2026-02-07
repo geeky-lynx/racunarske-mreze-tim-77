@@ -42,7 +42,7 @@
         
         
         
-        public Process(string name, int executionTime, int priority = 0, cpuUsage = 0, memoryUsage = 0.01)
+        public Process(string name, int executionTime, int priority = 0, double cpuUsage = 0, double memoryUsage = 0.01)
         {
             Name = name;
             ExecutionTime = executionTime;
@@ -54,7 +54,7 @@
         
         
         #region Private fields
-        private string _name;
+        private string _name = string.Empty;
         private int    _executionTime;
         private int    _priority;
         private double _cpuUsage;
