@@ -52,10 +52,20 @@ namespace Client
                     string commandName = parts[0].ToLower();
                     if (commandName.Equals("login"))
                     {
+                        if (isLoggedIn)
+                        {
+                            Console.WriteLine("Already logged in. Try other command");
+                            continue;
+                        }
+
                         byte[] msg = Encoding.UTF8.GetBytes(command);
 
                         byte[] responseByte = new byte[1024];
-                        int bytesCount = clientSocket.SendTo(msg, msg.Length, SocketFlags.None, destinationEp);
+                        int bytesCount = -1;
+                        if (!isLoggedIn)
+                            bytesCount = clientSocket.SendTo(msg, msg.Length, SocketFlags.None, destinationEp);
+                        else
+                            bytesCount = clientSocket.Send(msg);
                         Console.WriteLine($"Sent {bytesCount} bytes");
 
                         int receivedBytes = clientSocket.ReceiveFrom(responseByte, 1024, SocketFlags.None, ref receiverEp);
@@ -80,11 +90,11 @@ namespace Client
                         }
 
                         // Connect to the new given Tcp socket (with a new port)
-                        //clientSocket.Close();
-                        //clientSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                        //destinationEp.Port = port;
-                        //clientSocket.Connect(destinationEp);
-                        //isLoggedIn = true;
+                        clientSocket.Close();
+                        clientSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                        destinationEp.Port = port;
+                        clientSocket.Connect(destinationEp);
+                        isLoggedIn = true;
                     }
                     else
                     {

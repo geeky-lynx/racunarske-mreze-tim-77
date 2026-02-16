@@ -105,6 +105,12 @@ namespace Server
 
         public static void CommandLogin(string[] parameters)
         {
+            if (isUserConnected)
+            {
+                Console.WriteLine("User is already logged in. Skip this command");
+                return;
+            }
+
             if (parameters.Length != 2)
             {
                 string _msg = $"Error: Login command requires 2 parameters, but {parameters.Length} is given instead";
