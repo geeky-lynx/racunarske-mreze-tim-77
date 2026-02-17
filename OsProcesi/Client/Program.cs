@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -13,6 +14,7 @@ namespace Client
         private static IPEndPoint destinationEp = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 50_001);
         private static EndPoint receiverEp = new IPEndPoint(IPAddress.None, 0);
         private static string loggedInUsername = "";
+        private static List<Process> pendingProcesses = new List<Process>();
 
 
         public static void Main(string[] args)
@@ -55,6 +57,18 @@ namespace Client
                     string commandName = parts[0].ToLower();
                     if (commandName.Equals("login"))
                         CommandLogin(command);
+                    else if (commandName.Equals("logout"))
+                        CommandLogout(command);
+                    else if (commandName.Equals("spawn"))
+                        CommandSpawn(command);
+                    else if (commandName.Equals("sched"))
+                        CommandSched(command);
+                    else if (commandName.Equals("start"))
+                        CommandStart(command);
+                    else if (commandName.Equals("stop"))
+                        CommandStop(command);
+                    else if (commandName.Equals("exit"))
+                        CommandExit(command);
                     else
                         Console.WriteLine($"Command \'{commandName}\' doesn\'t exist");
                 }
@@ -71,25 +85,6 @@ namespace Client
             clientSocket.Close();
             Console.ReadKey();
         }
-
-
-
-        //private static bool ValidateUserInput(string? input)
-        //{
-        //    if (input == null)
-        //    {
-        //        Console.WriteLine("Error: User input is null");
-        //        return false;
-        //    }
-
-        //    string[] parts = input.Split(' ');
-        //    if (parts.Length < 1)
-        //    {
-        //        Console.WriteLine("Error: User input is empty");
-        //        return false;
-        //    }
-        //    return true;
-        //}
 
 
 
@@ -147,6 +142,69 @@ namespace Client
             clientSocket.Connect(destinationEp);
             isLoggedIn = true;
             loggedInUsername = parts[1];
+        }
+
+
+
+        private static void CommandLogout(string command)
+        {
+            if (!isLoggedIn)
+            {
+                Console.WriteLine("[Client]: User is not logged in. Skip");
+                return;
+            }
+            clientSocket.Close();
+        }
+
+
+
+        private static void CommandSpawn(string command)
+        {
+            if (!isLoggedIn)
+            {
+                Console.WriteLine("[Client]: User is not logged in. Skip");
+                return;
+            }
+
+            string[] parts = command.Split(' ');
+            // TODO: Finish the function
+        }
+
+
+
+        private static void CommandSched(string command)
+        {
+            // TODO
+        }
+
+
+
+        private static void CommandStart(string command)
+        {
+            // TODO
+        }
+
+
+
+        private static void CommandStop(string command)
+        {
+            // TODO
+        }
+
+
+
+        private static void CommandExit(string command)
+        {
+            // TODO
+        }
+
+
+
+        // Used when logging out or exiting the program
+        private static string PreparePendingProcessesForSending()
+        {
+            // TODO
+            return "";
         }
     }
 }

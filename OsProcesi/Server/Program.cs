@@ -1,4 +1,5 @@
 ﻿using Common;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -18,6 +19,7 @@ namespace Server
         private static IPEndPoint loginEp = new IPEndPoint(IPAddress.Any, 50_001);
         private static IPEndPoint userEp = new IPEndPoint(IPAddress.Any, serverPort);
 
+        private static List<Process> processes = new List<Process>();
         private static bool isRunning = true;
         private static bool isUserConnected = false;
         private static double cpuUsage = 0.0,
@@ -76,6 +78,21 @@ namespace Server
                     if (commandName.Equals("login"))
                         CommandLogin(parameters);
 
+                    else if (commandName.Equals("logout"))
+                        CommandLogout();
+
+                    else if (commandName.Equals("spawn"))
+                        CommandSpawn(parameters);
+
+                    else if (commandName.Equals("sched"))
+                        CommandSched(parameters);
+
+                    else if (commandName.Equals("start"))
+                        CommandStart(parameters);
+
+                    else if (commandName.Equals("stop"))
+                        CommandStop(parameters);
+
                     else if (commandName.Equals("exit"))
                         isRunning = false;
 
@@ -103,7 +120,7 @@ namespace Server
 
 
 
-        public static void CommandLogin(string[] parameters)
+        private static void CommandLogin(string[] parameters)
         {
             if (isUserConnected)
             {
@@ -142,18 +159,60 @@ namespace Server
             byte[] toSend = Encoding.UTF8.GetBytes(msg);
             _ = loginSocket.SendTo(toSend, senderEp);
 
+            if (!isUserInDatabase || !inputPassword.Equals(password))
+                return;
+
+
             serverSocket.Bind(userEp);
             serverSocket.Listen();
             userSocket = serverSocket.Accept();
             isUserConnected = true;
-
-            //listening.Close();
-            //
         }
 
 
 
-        public static void CommandNotFound(string command)
+        private static void CommandLogout()
+        {
+            if (!isUserConnected)
+            {
+                Console.WriteLine("[Server]: No user is logged in");
+                return;
+            }
+            Console.WriteLine("[Server]: User is logging out");
+            isUserConnected = false;
+        }
+
+
+
+        private static void CommandSpawn(string[] parameters)
+        {
+            // TODO
+        }
+
+
+
+        private static void CommandSched(string[] parameters)
+        {
+            // TODO
+        }
+
+
+
+        private static void CommandStart(string[] parameters)
+        {
+            // TODO
+        }
+
+
+
+        private static void CommandStop(string[] parameters)
+        {
+            // TODO
+        }
+
+
+
+        private static void CommandNotFound(string command)
         {
             string _msg = $"Error: Command \'{command}\' is not found";
             Console.WriteLine(_msg);
