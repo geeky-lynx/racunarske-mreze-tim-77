@@ -1,5 +1,5 @@
-﻿using Common;
-using System.Diagnostics;
+﻿using Common.Models;
+//using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -179,6 +179,7 @@ namespace Server
                 return;
             }
             Console.WriteLine("[Server]: User is logging out");
+            userSocket.Close();
             isUserConnected = false;
         }
 
@@ -187,6 +188,64 @@ namespace Server
         private static void CommandSpawn(string[] parameters)
         {
             // TODO
+            if (!isUserConnected)
+            {
+                Console.WriteLine("[Server]: User is not logged in. Skip");
+                return;
+            }
+
+
+            if (parameters.Length != 5)
+            {
+                Console.WriteLine($"[Server]: `spawn` command expects 5 arguments, but {parameters.Length} is given");
+                return;
+            }
+
+            // Validate parameters
+            string name = parameters[0]; // Just use it
+            int execTime = -1;
+            int prio = -1;
+            double cpu = -1.0;
+            double ram = -1.0;
+
+            if (!int.TryParse(parameters[1], out execTime))
+            {
+                Console.WriteLine($"[Server]: `execTime` must be an int value, but \'{parameters[1]}\' is given");
+                return;
+            }
+
+            if (!int.TryParse(parameters[2], out prio))
+            {
+                Console.WriteLine($"[Server]: `priority` must be an int value, but \'{parameters[2]}\' is given");
+                return;
+            }
+
+            if (!double.TryParse(parameters[3], out cpu))
+            {
+                Console.WriteLine($"[Server]: `cpuUsage` must be an float value, but \'{parameters[3]}\' is given");
+                return;
+            }
+
+            if (!double.TryParse(parameters[4], out ram))
+            {
+                Console.WriteLine($"[Server]: `ramUsage` must be an float value, but \'{parameters[4]}\' is given");
+                return;
+            }
+
+            string msg;
+            if (GetTotalCpuUsage() + cpu > 1.0 || GetTotalMemoryUsage() + ram > 1.0)
+            {
+                msg = $"Error: Could not spawn a new process. At the moment, CPU usage is at {cpu * 100}%, and Memory usage is at {ram * 100}%";
+            }
+            else
+            {
+                msg = "Success: Spawned a process and added to the queue";
+            }
+
+            processes.Add(new Process(name, execTime, prio, cpu, ram));
+            Console.WriteLine($"[Server]: {msg}");
+            byte[] toSend = Encoding.UTF8.GetBytes(msg);
+            _ = userSocket.Send(toSend);
         }
 
 
@@ -217,6 +276,38 @@ namespace Server
             string _msg = $"Error: Command \'{command}\' is not found";
             Console.WriteLine(_msg);
             loginSocket.SendTo(Encoding.UTF8.GetBytes(_msg), senderEp);
+        }
+
+
+
+        private static double GetTotalCpuUsage()
+        {
+            double cpuUsage = 0;
+            foreach (var process in processes)
+                cpuUsage += process.CpuUsage;
+            return cpuUsage;
+        }
+
+
+
+        private static double GetTotalMemoryUsage()
+        {
+            double memoryUsage = 0;
+            foreach (var process in processes)
+                memoryUsage += process.MemoryUsage;
+            return memoryUsage;
+        }
+
+
+
+        private static string PackProcessInfoForSending()
+        {
+            if (processes.Count <= 0)
+                return "";
+            string infos = $"{processes[0].Name}:{processes[0].ExecutionTime}:{processes[0].Priority}:{processes[0].CpuUsage}:{processes[0].MemoryUsage}";
+            foreach (var process in processes.Skip(1))
+                infos += $",{process.Name}:{process.ExecutionTime}:{process.Priority}:{process.CpuUsage}:{process.MemoryUsage}";
+            return infos;
         }
     }
 }
