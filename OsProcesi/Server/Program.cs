@@ -341,14 +341,19 @@ namespace Server
                         Monitor.Wait(mutex);
 
                     if (schedMode == SchedulerMode.ROUND_ROBIN)
-                        _processIndex = GetNextForRoundRobin();
-                    // if (schedMode == SchedulerMode.SHORTEST_FIRST
+                        _processIndex = GetNextForRoundRobin(_processIndex);
+                    // else if (schedMode == SchedulerMode.SHORTEST_FIRST
                     //      _processIndex = GetNextForShortestFirst()
                 }
 
+                Process info = processes[_processIndex];
+                string modeName = schedMode == SchedulerMode.ROUND_ROBIN ? "Round Robin" : "Shortest First";
+                Console.WriteLine($"[SCHEDULER]: Scheduler Mode: ${modeName}");
+                Console.WriteLine($"[SCHEDULER]: Doing work of process with: Name = {info.Name}, Execution Time = {info.ExecutionTime}, Priority = {info.Priority}, CPU Usage = {info.CpuUsage}, Memory Usage = {info.MemoryUsage}");
+
                 if (schedMode == SchedulerMode.ROUND_ROBIN)
                     DoRoundRobin(_processIndex);
-                // if (schedMode == SchedulerMode.SHORTEST_FIRST
+                // else if (schedMode == SchedulerMode.SHORTEST_FIRST
                 //      DoShortestFirst(_processIndex)
             }
         }
@@ -381,9 +386,9 @@ namespace Server
 
 
 
-        private static int GetNextForRoundRobin()
+        private static int GetNextForRoundRobin(int processIndex)
         {
-            return (roundRobinIndex + 1) % processes.Count;
+            return (processIndex + 1) % processes.Count;
         }
     }
 }
