@@ -191,6 +191,13 @@ namespace Client
             Console.WriteLine($"[Client]: Got a message (len = {receivedBytes}).");
             Console.WriteLine($"[Client]: Message received:");
             Console.WriteLine(received);
+
+            string[] list = received.Split(',');
+            for (int i = 0; i < list.Length; i++)
+            {
+                string[] fields = list[i].Split(':');
+                Console.WriteLine($"  #{i}: Name = {fields[0]}, Execution Time = {fields[1]}, Priority = {fields[2]}, CPU Usage = {fields[3]}, Memory Usage = {fields[4]}");
+            }
         }
 
 

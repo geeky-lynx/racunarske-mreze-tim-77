@@ -92,6 +92,9 @@ namespace Server
                     else if (commandName.Equals("logout"))
                         CommandLogout();
 
+                    else if (commandName.Equals("list"))
+                        CommandList();
+
                     else if (commandName.Equals("spawn"))
                         CommandSpawn(parameters);
 
@@ -192,6 +195,23 @@ namespace Server
             Console.WriteLine("[Server]: User is logging out");
             userSocket.Close();
             isUserConnected = false;
+        }
+
+
+
+        private static void CommandList()
+        {
+            if (!isUserConnected)
+            {
+                Console.WriteLine("[Server]: User is not logged in. Skip");
+                return;
+            }
+
+            Console.WriteLine("[Server]: Sending list of processes");
+
+            string msg = PackProcessInfoForSending();
+            byte[] toSend = Encoding.UTF8.GetBytes(msg);
+            _ = userSocket.Send(toSend);
         }
 
 
