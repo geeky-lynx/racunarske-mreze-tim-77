@@ -11,8 +11,9 @@ namespace Client
     {
         private static bool isLoggedIn = false;
         private static bool isRunning = true;
+        private static int udpPort = 50_001;
         private static Socket clientSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-        private static IPEndPoint destinationEp = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 50_001);
+        private static IPEndPoint destinationEp = new IPEndPoint(IPAddress.Parse("127.0.0.1"), udpPort);
         private static EndPoint receiverEp = new IPEndPoint(IPAddress.None, 0);
         private static string loggedInUsername = "";
         private static List<Process> pendingProcesses = new List<Process>();
@@ -149,6 +150,12 @@ namespace Client
             clientSocket.Close();
             clientSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             destinationEp.Port = port;
+            
+            if (!clientSocket.Poll(3_000_000, SelectMode.SelectWrite))
+            {
+                Console.WriteLine("[Client]: Connection timed out");
+                return;
+            }
             clientSocket.Connect(destinationEp);
             isLoggedIn = true;
             loggedInUsername = parts[1];
@@ -179,7 +186,9 @@ namespace Client
 
             clientSocket.Close();
             isLoggedIn = false;
+            loggedInUsername = "";
             clientSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            destinationEp.Port = udpPort;
         }
 
 

@@ -11,8 +11,10 @@ namespace Server
         private static Dictionary<string, string> registeredUsers = new Dictionary<string, string>();
         private static Socket loginSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
         private static Socket serverSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-        private static Socket userSocket;
+        // private static Socket userSocket;
         private static List<Socket> userSockets = new List<Socket>();
+        private static List<Socket> waitingSockets = new List<Socket>();
+        private static List<Socket> erroneousSockets = new List<Socket>();
 
 
         private const int QUANT = 3; // seconds
@@ -23,7 +25,7 @@ namespace Server
 
         private static List<Process> processes = new List<Process>();
         private static bool isRunning = true;
-        private static bool isUserConnected = false;
+        // private static bool isUserConnected = false;
         private static double cpuUsage = 0.0,
                               ramUsage = 0.0;
         private static byte[] receiveBuffer = new byte[1024];
@@ -51,10 +53,11 @@ namespace Server
 
             Thread schedulerEngine = new Thread(new ThreadStart(SchedulerEngine));
             schedulerEngine.Start();
-
+            
+            serverSocket.Bind(userEp);
             loginSocket.Bind(loginEp);
             serverSocket.Blocking = false;
-            loginSocket.Blocking = true; // TODO: change
+            loginSocket.Blocking = false;
 
             Console.WriteLine($"Server is listening on: {loginEp}");
 
@@ -64,62 +67,140 @@ namespace Server
             {
                 try
                 {
-                    int byteCount;
-                    EndPoint _ep;
-                    //loginSocket.Pro
-                    if (isUserConnected == false)
-                    {
-                        _ep = senderEp;
+                    int byteCount = -1;
+
+                    if (loginSocket.Poll(1_000_000, SelectMode.SelectRead))
+                    {   
                         byteCount = loginSocket.ReceiveFrom(receiveBuffer, ref senderEp);
+
+                        string message = Encoding.UTF8.GetString(receiveBuffer, 0, byteCount);
+                        Console.WriteLine($"Received message (length = {byteCount}) from {senderEp}.");
+                        if (byteCount <= 0)
+                            continue;
+                        Console.WriteLine($"Message: {message}");
+
+                        string[] parts = message.Split(' ');
+
+                        if (parts.Length < 1)
+                        {
+                            Console.WriteLine("Error: Empty command is sent");
+                        }
+
+                        string commandName = parts[0].ToLower();
+                        string[] parameters = parts.Skip(1).ToArray();
+
+                        // Execute commands
+                        if (commandName.Equals("login"))
+                            CommandLogin(parameters);
+                        else
+                            CommandNotFound(loginSocket, commandName);
                     }
-                    else
+
+
+                    if (userSockets.Count > 0)
                     {
-                        _ep = userEp;
-                        byteCount = userSocket.Receive(receiveBuffer);
+                        foreach (var _userSocket in userSockets)
+                        {
+                            waitingSockets.Add(_userSocket);
+                            erroneousSockets.Add(_userSocket);
+                        }
+                        Socket.Select(waitingSockets, null, erroneousSockets, 1_000_000);
                     }
-                    string message = Encoding.UTF8.GetString(receiveBuffer, 0, byteCount);
-                    Console.WriteLine($"Received message (length = {byteCount}) from {_ep}.");
-                    Console.WriteLine($"Message: {message}");
 
-                    //byte[] sendBuffer = new byte[1024];
-                    string[] parts = message.Split(' ');
+                    if (waitingSockets.Count <= 0)
+                        continue;
 
-                    if (parts.Length < 1)
+                    foreach (var waiting in waitingSockets)
                     {
-                        Console.WriteLine("Error: Empty command is sent");
-                    }
+                        byteCount = waiting.Receive(receiveBuffer);
 
-                    string commandName = parts[0].ToLower();
-                    string[] parameters = parts.Skip(1).ToArray();
+                        string message = Encoding.UTF8.GetString(receiveBuffer, 0, byteCount);
+                        Console.WriteLine($"Received message (length = {byteCount}) from {userEp}.");
+                        if (byteCount <= 0)
+                            continue;
+                        Console.WriteLine($"Message: {message}");
+
+                        string[] parts = message.Split(' ');
+
+                        if (parts.Length < 1)
+                        {
+                            Console.WriteLine("Error: Empty command is sent");
+                        }
+
+                        string commandName = parts[0].ToLower();
+                        string[] parameters = parts.Skip(1).ToArray();
+
+                        if (commandName.Equals("logout"))
+                            CommandLogout(waiting, parameters);
+
+                        else if (commandName.Equals("list"))
+                            CommandList(waiting);
+
+                        else if (commandName.Equals("spawn"))
+                            CommandSpawn(waiting, parameters);
+
+                        else if (commandName.Equals("sched"))
+                            CommandSched(waiting, parameters);
+
+                        else if (commandName.Equals("start"))
+                            CommandStart(waiting);
+
+                        else if (commandName.Equals("stop"))
+                            CommandStop(waiting);
+
+                        else if (commandName.Equals("terminate"))
+                            CommandTerminate();
+
+                        else
+                            CommandNotFound(waiting, commandName);
+                    }
+                    waitingSockets.Clear();
+                    erroneousSockets.Clear();
+
+                    
+                    
+                    // string message = Encoding.UTF8.GetString(receiveBuffer, 0, byteCount);
+                    // Console.WriteLine($"Received message (length = {byteCount}) from {_ep}.");
+                    // Console.WriteLine($"Message: {message}");
+
+                    // string[] parts = message.Split(' ');
+
+                    // if (parts.Length < 1)
+                    // {
+                    //     Console.WriteLine("Error: Empty command is sent");
+                    // }
+
+                    // string commandName = parts[0].ToLower();
+                    // string[] parameters = parts.Skip(1).ToArray();
 
 
                     // Execute commands
-                    if (commandName.Equals("login"))
-                        CommandLogin(parameters);
+                    // if (commandName.Equals("login"))
+                    //     CommandLogin(parameters);
 
-                    else if (commandName.Equals("logout"))
-                        CommandLogout(parameters);
+                    // else if (commandName.Equals("logout"))
+                    //     CommandLogout(parameters);
 
-                    else if (commandName.Equals("list"))
-                        CommandList();
+                    // else if (commandName.Equals("list"))
+                    //     CommandList();
 
-                    else if (commandName.Equals("spawn"))
-                        CommandSpawn(parameters);
+                    // else if (commandName.Equals("spawn"))
+                    //     CommandSpawn(parameters);
 
-                    else if (commandName.Equals("sched"))
-                        CommandSched(parameters);
+                    // else if (commandName.Equals("sched"))
+                    //     CommandSched(parameters);
 
-                    else if (commandName.Equals("start"))
-                        CommandStart();
+                    // else if (commandName.Equals("start"))
+                    //     CommandStart();
 
-                    else if (commandName.Equals("stop"))
-                        CommandStop();
+                    // else if (commandName.Equals("stop"))
+                    //     CommandStop();
 
-                    else if (commandName.Equals("terminate"))
-                        CommandTerminate();
+                    // else if (commandName.Equals("terminate"))
+                    //     CommandTerminate();
 
-                    else
-                        CommandNotFound(commandName);
+                    // else
+                    //     CommandNotFound(commandName);
                 }
                 catch (SocketException exception)
                 {
@@ -153,22 +234,22 @@ namespace Server
             Console.ReadKey();
             registeredUsers.Clear();
             loginSocket.Close();
-            //serverSocket.Close();
+            serverSocket.Close();
         }
 
 
 
         private static void CommandLogin(string[] parameters)
         {
-            if (isUserConnected)
-            {
-                Console.WriteLine("User is already logged in. Skip this command");
-                return;
-            }
+            // if (isUserConnected)
+            // {
+            //     Console.WriteLine("User is already logged in. Skip this command");
+            //     return;
+            // }
 
             if (parameters.Length != 2)
             {
-                string _msg = $"Error: Login command requires 2 parameters, but {parameters.Length} is given instead";
+                string _msg = $"[Server]: Error: Login command requires 2 parameters, but {parameters.Length} is given instead";
                 Console.WriteLine(_msg);
                 loginSocket.SendTo(Encoding.UTF8.GetBytes(_msg), senderEp);
                 return;
@@ -176,7 +257,7 @@ namespace Server
 
             string inputUsername = parameters[0];
             string inputPassword = parameters[1];
-            string password = string.Empty;
+            string? password = string.Empty;
             bool isUserInDatabase = registeredUsers.TryGetValue(inputUsername, out password);
             string msg;
 
@@ -193,7 +274,7 @@ namespace Server
                 msg = $"Success: TcpSocket={64000}";
             }
 
-            Console.WriteLine(msg);
+            Console.WriteLine($"[Server]: {msg}");
             byte[] toSend = Encoding.UTF8.GetBytes(msg);
             _ = loginSocket.SendTo(toSend, senderEp);
 
@@ -201,22 +282,30 @@ namespace Server
                 return;
 
 
-            serverSocket.Bind(userEp);
+            
             serverSocket.Listen();
-            userSocket = serverSocket.Accept();
-            userSockets.Add(userSocket);
-            isUserConnected = true;
+            if (serverSocket.Poll(1_000_000, SelectMode.SelectRead))
+            {
+                var userSocket = serverSocket.Accept();
+                userSocket.Blocking = false;
+                userSockets.Add(userSocket);
+            }
+            else
+            {
+                Console.WriteLine("[Server]: Something happened while user was connecting (dropped package?)");
+            }
+            // isUserConnected = true;
         }
 
 
 
-        private static void CommandLogout(string[] parameters)
+        private static void CommandLogout(Socket userSocket, string[] parameters)
         {
-            if (!isUserConnected)
-            {
-                Console.WriteLine("[Server]: No user is logged in");
-                return;
-            }
+            // if (!isUserConnected)
+            // {
+            //     Console.WriteLine("[Server]: No user is logged in");
+            //     return;
+            // }
 
             if (parameters.Length != 1)
             {
@@ -274,18 +363,18 @@ namespace Server
             }
 
             userSocket.Close();
-            isUserConnected = false;
+            // isUserConnected = false;
         }
 
 
 
-        private static void CommandList()
+        private static void CommandList(Socket userSocket)
         {
-            if (!isUserConnected)
-            {
-                Console.WriteLine("[Server]: User is not logged in. Skip");
-                return;
-            }
+            // if (!isUserConnected)
+            // {
+            //     Console.WriteLine("[Server]: User is not logged in. Skip");
+            //     return;
+            // }
 
             Console.WriteLine("[Server]: Sending list of processes");
 
@@ -298,13 +387,13 @@ namespace Server
 
 
 
-        private static void CommandSpawn(string[] parameters)
+        private static void CommandSpawn(Socket userSocket, string[] parameters)
         {
-            if (!isUserConnected)
-            {
-                Console.WriteLine("[Server]: User is not logged in. Skip");
-                return;
-            }
+            // if (!isUserConnected)
+            // {
+            //     Console.WriteLine("[Server]: User is not logged in. Skip");
+            //     return;
+            // }
 
 
             if (parameters.Length != 5)
@@ -383,13 +472,13 @@ namespace Server
 
 
 
-        private static void CommandSched(string[] parameters)
+        private static void CommandSched(Socket userSocket, string[] parameters)
         {
-            if (!isUserConnected)
-            {
-                Console.WriteLine("[Server]: User is not logged in. Skip");
-                return;
-            }
+            // if (!isUserConnected)
+            // {
+            //     Console.WriteLine("[Server]: User is not logged in. Skip");
+            //     return;
+            // }
 
 
             if (parameters.Length != 1)
@@ -423,13 +512,13 @@ namespace Server
 
 
 
-        private static void CommandStart()
+        private static void CommandStart(Socket userSocket)
         {
-            if (!isUserConnected)
-            {
-                Console.WriteLine("[Server]: User is not logged in. Skip");
-                return;
-            }
+            // if (!isUserConnected)
+            // {
+            //     Console.WriteLine("[Server]: User is not logged in. Skip");
+            //     return;
+            // }
 
             string msg;
             if (schedulerRunning == true)
@@ -453,13 +542,13 @@ namespace Server
 
 
 
-        private static void CommandStop()
+        private static void CommandStop(Socket userSocket)
         {
-            if (!isUserConnected)
-            {
-                Console.WriteLine("[Server]: User is not logged in. Skip");
-                return;
-            }
+            // if (!isUserConnected)
+            // {
+            //     Console.WriteLine("[Server]: User is not logged in. Skip");
+            //     return;
+            // }
 
             string msg;
             if (schedulerRunning == false)
@@ -485,11 +574,11 @@ namespace Server
 
         private static void CommandTerminate()
         {
-            if (!isUserConnected)
-            {
-                Console.WriteLine("[Server]: User is not logged in. Skip");
-                return;
-            }
+            // if (!isUserConnected)
+            // {
+            //     Console.WriteLine("[Server]: User is not logged in. Skip");
+            //     return;
+            // }
 
             Console.WriteLine("[Server]: Exiting main loop");
             isRunning = false;
@@ -497,11 +586,14 @@ namespace Server
 
 
 
-        private static void CommandNotFound(string command)
+        private static void CommandNotFound(Socket socket, string command)
         {
             string _msg = $"Error: Command \'{command}\' is not found";
-            Console.WriteLine(_msg);
-            loginSocket.SendTo(Encoding.UTF8.GetBytes(_msg), senderEp);
+            Console.WriteLine($"[Server]: {_msg}");
+            if (socket.ProtocolType == ProtocolType.Udp)
+                loginSocket.SendTo(Encoding.UTF8.GetBytes(_msg), senderEp);
+            else
+                socket.Send(Encoding.UTF8.GetBytes(_msg));
         }
 
 
