@@ -278,28 +278,129 @@ namespace Client
 
         private static void CommandSched(string command)
         {
-            // TODO
+            if (!isLoggedIn)
+            {
+                Console.WriteLine("[Client]: User is not logged in. Skip");
+                return;
+            }
+
+            string[] parts = command.Split(' ');
+
+            if (parts.Length != 2)
+            {
+                Console.WriteLine($"[Client]: `sched` command expects 1 argument, but {parts.Length - 1} is given");
+                return;
+            }
+
+            string alg = parts[1].ToLower();
+            if (!alg.Equals("roundrobin") || !alg.Equals("shortestfirst"))
+            {
+                Console.WriteLine($"[Client]: Argument should be either \"roundrobin\" or \"shortestfirst\", but \"{alg}\" is given");
+                return;
+            }
+
+            byte[] msg = Encoding.UTF8.GetBytes(command);
+            int bytesCount = clientSocket.Send(msg);
+            Console.WriteLine($"[Client]: Sent {bytesCount} bytes");
+
+            byte[] responseBytes = new byte[1024];
+            int receivedBytes = clientSocket.Receive(responseBytes, 1024, SocketFlags.None);
+            string received = Encoding.UTF8.GetString(responseBytes);
+
+            Console.WriteLine($"[Client]: Got a message (len = {receivedBytes}).");
+            Console.WriteLine($"[Client]: Message received:");
+            Console.WriteLine(received);
+
+            if (!received.Contains("Success"))
+            {
+                Console.WriteLine("[Client]: Server returned error message.");
+            }
         }
 
 
 
         private static void CommandStart(string command)
         {
-            // TODO
+            if (!isLoggedIn)
+            {
+                Console.WriteLine("[Client]: User is not logged in. Skip");
+                return;
+            }
+
+            string[] parts = command.Split(' ');
+
+            if (parts.Length != 1)
+            {
+                Console.WriteLine($"[Client]: `start` command expects 0 arguments, but {parts.Length - 1} is given");
+                return;
+            }
+
+
+            byte[] msg = Encoding.UTF8.GetBytes(command);
+            int bytesCount = clientSocket.Send(msg);
+            Console.WriteLine($"[Client]: Sent {bytesCount} bytes");
+
+            byte[] responseBytes = new byte[1024];
+            int receivedBytes = clientSocket.Receive(responseBytes, 1024, SocketFlags.None);
+            string received = Encoding.UTF8.GetString(responseBytes);
+
+            Console.WriteLine($"[Client]: Got a message (len = {receivedBytes}).");
+            Console.WriteLine($"[Client]: Message received:");
+            Console.WriteLine(received);
+
+            if (!received.Contains("Success"))
+            {
+                Console.WriteLine("[Client]: Server returned error message.");
+            }
         }
 
 
 
         private static void CommandStop(string command)
         {
-            // TODO
+            if (!isLoggedIn)
+            {
+                Console.WriteLine("[Client]: User is not logged in. Skip");
+                return;
+            }
+
+            string[] parts = command.Split(' ');
+
+            if (parts.Length != 1)
+            {
+                Console.WriteLine($"[Client]: `stop` command expects 0 arguments, but {parts.Length - 1} is given");
+                return;
+            }
+
+
+            byte[] msg = Encoding.UTF8.GetBytes(command);
+            int bytesCount = clientSocket.Send(msg);
+            Console.WriteLine($"[Client]: Sent {bytesCount} bytes");
+
+            byte[] responseBytes = new byte[1024];
+            int receivedBytes = clientSocket.Receive(responseBytes, 1024, SocketFlags.None);
+            string received = Encoding.UTF8.GetString(responseBytes);
+
+            Console.WriteLine($"[Client]: Got a message (len = {receivedBytes}).");
+            Console.WriteLine($"[Client]: Message received:");
+            Console.WriteLine(received);
+
+            if (!received.Contains("Success"))
+            {
+                Console.WriteLine("[Client]: Server returned error message.");
+            }
         }
 
 
 
         private static void CommandExit(string command)
         {
-            // TODO
+            if (isLoggedIn)
+            {
+                Console.WriteLine("[Client]: Logging out...");
+                CommandLogout(command);
+            }
+            isRunning = false;
         }
 
 

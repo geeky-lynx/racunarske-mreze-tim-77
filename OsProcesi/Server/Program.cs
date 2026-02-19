@@ -28,7 +28,7 @@ namespace Server
                               ramUsage = 0.0;
         private static byte[]  receiveBuffer = new byte[1024];
 
-        private static SchedulerMode schedMode = SchedulerMode.NONE;
+        private static SchedulerMode schedMode = SchedulerMode.SHORTEST_FIRST;
         private static bool schedulerRunning = true;
         private static bool engineRunning = true;
         private static Mutex mutex = new Mutex();
@@ -102,18 +102,16 @@ namespace Server
                         CommandSched(parameters);
 
                     else if (commandName.Equals("start"))
-                        CommandStart(parameters);
+                        CommandStart();
 
                     else if (commandName.Equals("stop"))
-                        CommandStop(parameters);
+                        CommandStop();
 
                     else if (commandName.Equals("exit"))
                         isRunning = false;
 
                     else
                         CommandNotFound(commandName);
-
-                    //int byteCount2 = loginSocket.SendTo(sendBuffer, ref senderEp);
                 }
                 catch (SocketException exception)
                 {
@@ -288,20 +286,102 @@ namespace Server
         private static void CommandSched(string[] parameters)
         {
             // TODO
+            if (!isUserConnected)
+            {
+                Console.WriteLine("[Server]: User is not logged in. Skip");
+                return;
+            }
+
+
+            if (parameters.Length != 1)
+            {
+                Console.WriteLine($"[Server]: `spawn` command expects 1 argument, but {parameters.Length} is given");
+                return;
+            }
+
+            // Validate parameters
+            
+            string _schedMode = parameters[0];
+            string msg;
+            if (!_schedMode.Equals("roundrobin") || !_schedMode.Equals("shortestfirst"))
+            {
+                msg = $"Error: Could not set a scheduling mode because invalid \"{_schedMode}\" is given";
+            }
+            else
+            {
+                msg = $"Success: Mode is set to \"{_schedMode}\"";
+                lock (mutex)
+                {
+                    schedMode = _schedMode.Equals("roundrobin") ? SchedulerMode.ROUND_ROBIN : SchedulerMode.SHORTEST_FIRST;
+                    Monitor.Pulse(mutex);
+                }
+            }
+
+            Console.WriteLine($"[Server]: {msg}");
+            byte[] toSend = Encoding.UTF8.GetBytes(msg);
+            _ = userSocket.Send(toSend);
         }
 
 
 
-        private static void CommandStart(string[] parameters)
+        private static void CommandStart()
         {
             // TODO
+            if (!isUserConnected)
+            {
+                Console.WriteLine("[Server]: User is not logged in. Skip");
+                return;
+            }
+
+            string msg;
+            if (schedulerRunning == false)
+            {
+                msg = $"Success: Scheduler was already started";
+            }
+            else
+            {
+                msg = $"Success: Scheduler is now started";
+                lock (mutex)
+                {
+                    schedulerRunning = false;
+                    Monitor.Pulse(mutex);
+                }
+            }
+
+            Console.WriteLine($"[Server]: {msg}");
+            byte[] toSend = Encoding.UTF8.GetBytes(msg);
+            _ = userSocket.Send(toSend);
         }
 
 
 
-        private static void CommandStop(string[] parameters)
+        private static void CommandStop()
         {
             // TODO
+            if (!isUserConnected)
+            {
+                Console.WriteLine("[Server]: User is not logged in. Skip");
+                return;
+            }
+
+            string msg;
+            if (schedulerRunning == true)
+            {
+                msg = $"Success: Scheduler was already stopped";
+            }
+            else
+            {
+                msg = $"Success: Scheduler is now stopped";
+                lock (mutex)
+                {
+                    schedulerRunning = true;
+                    Monitor.Pulse(mutex);
+                }
+            }
+
+            Console.WriteLine($"[Server]: {msg}");
+            byte[] toSend = Encoding.UTF8.GetBytes(msg);
+            _ = userSocket.Send(toSend);
         }
 
 
