@@ -14,7 +14,6 @@ namespace Server
         private static Socket userSocket;
 
 
-        private static int roundRobinIndex = 0;
         private const int QUANT = 3; // seconds
         private static int serverPort = 64_000;
         private static EndPoint senderEp = new IPEndPoint(IPAddress.Any, 0);
@@ -29,7 +28,7 @@ namespace Server
         private static byte[] receiveBuffer = new byte[1024];
 
         private static SchedulerMode schedMode = SchedulerMode.SHORTEST_FIRST;
-        private static bool schedulerRunning = true;
+        private static bool schedulerRunning = false;
         private static bool engineRunning = true;
         private static Mutex mutex = new Mutex();
 
@@ -46,7 +45,7 @@ namespace Server
             registeredUsers.Add("bale32", "qwertyzaz");
             registeredUsers.Add("mile", "12341234");
             registeredUsers.Add("admin", "admin123");
-
+            
             Console.WriteLine("[Server]: Hello, World!");
 
             Thread schedulerEngine = new Thread(new ThreadStart(SchedulerEngine));
@@ -229,8 +228,10 @@ namespace Server
             Console.WriteLine("[Server]: Sending list of processes");
 
             string msg = PackProcessInfoForSending();
+            Console.WriteLine(msg);
             byte[] toSend = Encoding.UTF8.GetBytes(msg);
             _ = userSocket.Send(toSend);
+            Console.WriteLine("[Server]: Done sending");
         }
 
 
@@ -283,22 +284,23 @@ namespace Server
             }
 
             string msg;
-            if (GetTotalCpuUsage() + cpu > 1.0 || GetTotalMemoryUsage() + ram > 1.0)
+            double _totalCpuUsage = GetTotalCpuUsage();
+            double _totalMemoryUsage = GetTotalMemoryUsage();
+            if (_totalCpuUsage + cpu > 1.0 || _totalMemoryUsage + ram > 1.0)
             {
-                msg = $"Error: Could not spawn a new process. At the moment, CPU usage is at {cpu * 100}%, and Memory usage is at {ram * 100}%";
+                msg = $"Error: Could not spawn a new process. At the moment, CPU usage is at {_totalCpuUsage * 100}%, and Memory usage is at {_totalMemoryUsage * 100}%";
             }
             else
             {
                 msg = "Success: Spawned a process and added to the queue";
-            }
 
-            lock (mutex)
-            {
                 var newProcess = new Process(name, execTime, prio, cpu, ram);
-                processes.Add(newProcess);
-                Monitor.Pulse(mutex);
+                lock (mutex)
+                {
+                    processes.Add(newProcess);
+                    Monitor.Pulse(mutex);
+                }
 
-               
                 cpuUsage = GetTotalCpuUsage();
                 ramUsage = GetTotalMemoryUsage();
 
@@ -340,7 +342,7 @@ namespace Server
             
             string _schedMode = parameters[0];
             string msg;
-            if (!_schedMode.Equals("roundrobin") || !_schedMode.Equals("shortestfirst"))
+            if (!_schedMode.Equals("roundrobin") && !_schedMode.Equals("shortestfirst"))
             {
                 msg = $"Error: Could not set a scheduling mode because invalid \"{_schedMode}\" is given";
             }
@@ -371,7 +373,7 @@ namespace Server
             }
 
             string msg;
-            if (schedulerRunning == false)
+            if (schedulerRunning == true)
             {
                 msg = $"Success: Scheduler was already started";
             }
@@ -380,7 +382,7 @@ namespace Server
                 msg = $"Success: Scheduler is now started";
                 lock (mutex)
                 {
-                    schedulerRunning = false;
+                    schedulerRunning = true;
                     Monitor.Pulse(mutex);
                 }
             }
@@ -402,7 +404,7 @@ namespace Server
             }
 
             string msg;
-            if (schedulerRunning == true)
+            if (schedulerRunning == false)
             {
                 msg = $"Success: Scheduler was already stopped";
             }
@@ -411,7 +413,7 @@ namespace Server
                 msg = $"Success: Scheduler is now stopped";
                 lock (mutex)
                 {
-                    schedulerRunning = true;
+                    schedulerRunning = false;
                     Monitor.Pulse(mutex);
                 }
             }
@@ -455,7 +457,7 @@ namespace Server
         private static string PackProcessInfoForSending()
         {
             if (processes.Count <= 0)
-                return "";
+                return "~";
             string infos = $"{processes[0].Name}:{processes[0].ExecutionTime}:{processes[0].Priority}:{processes[0].CpuUsage}:{processes[0].MemoryUsage}";
             foreach (var process in processes.Skip(1))
                 infos += $",{process.Name}:{process.ExecutionTime}:{process.Priority}:{process.CpuUsage}:{process.MemoryUsage}";
@@ -471,9 +473,9 @@ namespace Server
             int _processIndex = -1;
             while (engineRunning)
             {
+                Console.WriteLine($"[SCHEDULER]: In queue: {processes.Count}");
                 lock (mutex)
                 {
-                    
                     while (schedulerRunning == false || processes.Count <= 0)
                         Monitor.Wait(mutex);
 
@@ -485,7 +487,7 @@ namespace Server
 
                 Process info = processes[_processIndex];
                 string modeName = schedMode == SchedulerMode.ROUND_ROBIN ? "Round Robin" : "Shortest First";
-                Console.WriteLine($"[SCHEDULER]: Scheduler Mode: ${modeName}");
+                Console.WriteLine($"[SCHEDULER]: Scheduler Mode: {modeName}");
                 Console.WriteLine($"[SCHEDULER]: Doing work of process with: Name = {info.Name}, Execution Time = {info.ExecutionTime}, Priority = {info.Priority}, CPU Usage = {info.CpuUsage}, Memory Usage = {info.MemoryUsage}");
 
                 if (schedMode == SchedulerMode.ROUND_ROBIN)
@@ -497,37 +499,6 @@ namespace Server
 
 
 
-        private static void DoRoundRobin(int processIndex)
-        {
-            //
-            int execTime = processes[processIndex].ExecutionTime;
-            int amountToSleep = int.Min(QUANT, execTime);
-            Thread.Sleep(amountToSleep);
-            if (execTime < QUANT)
-            {
-                Console.WriteLine($"[SCHEDULER]: The process with name \'{processes[processIndex]}\' has finished. Removing from queue");
-                lock (mutex)
-                {
-                    processes.RemoveAt(processIndex);
-
-                    
-                    cpuUsage = GetTotalCpuUsage();
-                    ramUsage = GetTotalMemoryUsage();
-                }
-            }
-            else
-            {
-                Console.WriteLine($"[SCHEDULER]: The process with name \'{processes[processIndex]}\' has done its turn. Now it\'s paused, waiting its turn again");
-                lock (mutex)
-                {
-                    processes[processIndex].ExecutionTime -= execTime;
-                }
-            }
-        }
-
-
-
-     
         private static int GetNextForShortestFirst()
         {
             int bestIndex = 0;
@@ -547,7 +518,6 @@ namespace Server
 
 
 
-       
         private static void DoShortestFirst(int processIndex)
         {
             Process p;
@@ -558,6 +528,7 @@ namespace Server
 
             Thread.Sleep(p.ExecutionTime * 1000);
 
+            Console.WriteLine($"[SCHEDULER]: The process with name \'{processes[processIndex]}\' has finished. Removing from queue");
             lock (mutex)
             {
                 processes.RemoveAt(processIndex);
@@ -573,6 +544,35 @@ namespace Server
         private static int GetNextForRoundRobin(int processIndex)
         {
             return (processIndex + 1) % processes.Count;
+        }
+
+
+
+        private static void DoRoundRobin(int processIndex)
+        {
+            int execTime = processes[processIndex].ExecutionTime;
+            int amountToSleep = int.Min(QUANT, execTime);
+            Thread.Sleep(amountToSleep * 1_000);
+            if (execTime < QUANT)
+            {
+                Console.WriteLine($"[SCHEDULER]: The process with name \'{processes[processIndex]}\' has finished. Removing from queue");
+                lock (mutex)
+                {
+                    processes.RemoveAt(processIndex);
+
+
+                    cpuUsage = GetTotalCpuUsage();
+                    ramUsage = GetTotalMemoryUsage();
+                }
+            }
+            else
+            {
+                Console.WriteLine($"[SCHEDULER]: The process with name \'{processes[processIndex]}\' has done its turn. Now it\'s paused, waiting its turn again");
+                lock (mutex)
+                {
+                    processes[processIndex].ExecutionTime -= amountToSleep;
+                }
+            }
         }
     }
 }

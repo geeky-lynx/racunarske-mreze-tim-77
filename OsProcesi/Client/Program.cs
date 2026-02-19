@@ -192,12 +192,29 @@ namespace Client
             Console.WriteLine($"[Client]: Message received:");
             Console.WriteLine(received);
 
+            if (received[0] == '~')
+            {
+                Console.WriteLine("[Client]: Empty list");
+                return;
+            }
+
+            double cpuUsage = 0.0;
+            double ramUsage = 0.0;
             string[] list = received.Split(',');
+            Console.WriteLine($"[Client]: Number of processes: {list.Length}");
             for (int i = 0; i < list.Length; i++)
             {
                 string[] fields = list[i].Split(':');
                 Console.WriteLine($"  #{i}: Name = {fields[0]}, Execution Time = {fields[1]}, Priority = {fields[2]}, CPU Usage = {fields[3]}, Memory Usage = {fields[4]}");
+                double cpu, ram;
+                if (!double.TryParse(fields[3], out cpu))
+                    Console.WriteLine($"[Client]: Warning: Could not parse CPU Usage value: {fields[3]}");
+                if (!double.TryParse(fields[4], out ram))
+                    Console.WriteLine($"[Client]: Warning: Could not parse RAM Usage value: {fields[4]}");
+                cpuUsage += cpu;
+                ramUsage += ram;
             }
+            Console.WriteLine($"[Client]: Server\'s resource usage: CPU = {cpuUsage}, Memory = {ramUsage}");
         }
 
 
@@ -293,7 +310,7 @@ namespace Client
             }
 
             string alg = parts[1].ToLower();
-            if (!alg.Equals("roundrobin") || !alg.Equals("shortestfirst"))
+            if (!alg.Equals("roundrobin") && !alg.Equals("shortestfirst"))
             {
                 Console.WriteLine($"[Client]: Argument should be either \"roundrobin\" or \"shortestfirst\", but \"{alg}\" is given");
                 return;
