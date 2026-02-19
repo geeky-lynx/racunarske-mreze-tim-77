@@ -14,6 +14,8 @@ namespace Server
         private static Socket userSocket;
 
 
+        private static int roundRobinIndex = 0;
+        private const int QUANT = 3; // seconds
         private static int serverPort = 64_000;
         private static EndPoint senderEp = new IPEndPoint(IPAddress.Any, 0);
         private static IPEndPoint loginEp = new IPEndPoint(IPAddress.Any, 50_001);
@@ -26,6 +28,12 @@ namespace Server
                               ramUsage = 0.0;
         private static byte[]  receiveBuffer = new byte[1024];
 
+        private static SchedulerMode schedMode = SchedulerMode.NONE;
+        private static bool schedulerRunning = true;
+        private static bool engineRunning = true;
+        private static Mutex mutex = new Mutex();
+
+
 
         public static void Main(string[] args)
         {
@@ -35,6 +43,9 @@ namespace Server
             registeredUsers.Add("admin", "admin123");
 
             Console.WriteLine("[Server]: Hello, World!");
+
+            Thread schedulerEngine = new Thread(new ThreadStart(SchedulerEngine));
+            schedulerEngine.Start();
 
             loginSocket.Bind(loginEp);
 
@@ -242,7 +253,11 @@ namespace Server
                 msg = "Success: Spawned a process and added to the queue";
             }
 
-            processes.Add(new Process(name, execTime, prio, cpu, ram));
+            lock (mutex)
+            {
+                processes.Add(new Process(name, execTime, prio, cpu, ram));
+                Monitor.Pulse(mutex);
+            }
             Console.WriteLine($"[Server]: {msg}");
             byte[] toSend = Encoding.UTF8.GetBytes(msg);
             _ = userSocket.Send(toSend);
@@ -308,6 +323,67 @@ namespace Server
             foreach (var process in processes.Skip(1))
                 infos += $",{process.Name}:{process.ExecutionTime}:{process.Priority}:{process.CpuUsage}:{process.MemoryUsage}";
             return infos;
+        }
+
+
+
+        private static void SchedulerEngine()
+        {
+            Console.WriteLine("[SCHEDULER]: Hello, World!");
+
+            int _processIndex = -1;
+            while (engineRunning)
+            {
+                lock (mutex)
+                {
+                    // Pick the next available 
+                    while (schedulerRunning == false || processes.Count < 0)
+                        Monitor.Wait(mutex);
+
+                    if (schedMode == SchedulerMode.ROUND_ROBIN)
+                        _processIndex = GetNextForRoundRobin();
+                    // if (schedMode == SchedulerMode.SHORTEST_FIRST
+                    //      _processIndex = GetNextForShortestFirst()
+                }
+
+                if (schedMode == SchedulerMode.ROUND_ROBIN)
+                    DoRoundRobin(_processIndex);
+                // if (schedMode == SchedulerMode.SHORTEST_FIRST
+                //      DoShortestFirst(_processIndex)
+            }
+        }
+
+
+
+        private static void DoRoundRobin(int processIndex)
+        {
+            //
+            int execTime = processes[processIndex].ExecutionTime;
+            int amountToSleep = int.Min(QUANT, execTime);
+            Thread.Sleep(amountToSleep);
+            if (execTime < QUANT)
+            {
+                Console.WriteLine($"[SCHEDULER]: The process with name \'{processes[processIndex]}\' has finished. Removing from queue");
+                lock (mutex)
+                {
+                    processes.RemoveAt(processIndex);
+                }
+            }
+            else
+            {
+                Console.WriteLine($"[SCHEDULER]: The process with name \'{processes[processIndex]}\' has done its turn. Now it\'s paused, waiting its turn again");
+                lock (mutex)
+                {
+                    processes[processIndex].ExecutionTime -= execTime;
+                }
+            }
+        }
+
+
+
+        private static int GetNextForRoundRobin()
+        {
+            return (roundRobinIndex + 1) % processes.Count;
         }
     }
 }
