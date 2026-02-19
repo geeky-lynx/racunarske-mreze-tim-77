@@ -94,7 +94,7 @@ namespace Server
                         CommandLogin(parameters);
 
                     else if (commandName.Equals("logout"))
-                        CommandLogout();
+                        CommandLogout(parameters);
 
                     else if (commandName.Equals("list"))
                         CommandList();
@@ -111,8 +111,8 @@ namespace Server
                     else if (commandName.Equals("stop"))
                         CommandStop();
 
-                    else if (commandName.Equals("exit"))
-                        isRunning = false;
+                    else if (commandName.Equals("terminate"))
+                        CommandTerminate();
 
                     else
                         CommandNotFound(commandName);
@@ -127,6 +127,8 @@ namespace Server
 
 
             // Server end
+            schedulerRunning = false;
+            engineRunning = false;
             Console.WriteLine("Server has finished");
 
             
@@ -144,10 +146,10 @@ namespace Server
                 Console.WriteLine($"Memory Usage: {shortestProcess.MemoryUsage}");
             }
 
+            Console.ReadKey();
             registeredUsers.Clear();
             loginSocket.Close();
             //serverSocket.Close();
-            Console.ReadKey();
         }
 
 
@@ -203,14 +205,69 @@ namespace Server
 
 
 
-        private static void CommandLogout()
+        private static void CommandLogout(string[] parameters)
         {
             if (!isUserConnected)
             {
                 Console.WriteLine("[Server]: No user is logged in");
                 return;
             }
+
+            if (parameters.Length != 1)
+            {
+                Console.WriteLine($"[Server]: `spawn` command expects 1 argument, but {parameters.Length} is given");
+                return;
+            }
+
             Console.WriteLine("[Server]: User is logging out");
+
+            string[] list = parameters[0].Split(',');
+            Console.WriteLine($"[Server]: Number of pending processes: {list.Length}");
+            for (int i = 0; i < list.Length; i++)
+            {
+                string[] fields = list[i].Split(':');
+                string name = fields[0];
+                int execTime, prio;
+                double cpu, ram;
+
+                if (!int.TryParse(fields[1], out execTime))
+                {
+                    Console.WriteLine($"[Server]: Warning: Could not parse Execution Time value: {fields[3]}. Skip");
+                    continue;
+                }
+
+                if (!int.TryParse(fields[2], out prio))
+                {
+                    Console.WriteLine($"[Server]: Warning: Could not parse Priority value: {fields[3]}. Skip");
+                    continue;
+                }
+
+                if (!double.TryParse(fields[3], out cpu))
+                {
+                    Console.WriteLine($"[Server]: Warning: Could not parse CPU Usage value: {fields[3]}. Skip");
+                    continue;
+                }
+
+                if (!double.TryParse(fields[4], out ram))
+                {
+                    Console.WriteLine($"[Server]: Warning: Could not parse RAM Usage value: {fields[4]}. Skip");
+                    continue;
+                }
+
+                double _totalCpuUsage = GetTotalCpuUsage();
+                double _totalRamUsage = GetTotalMemoryUsage();
+                if (_totalCpuUsage + cpu > 1.0 ||  _totalRamUsage + ram > 1.0)
+                {
+                    Console.WriteLine($"[Server]: Can\'t push to queue because resources are taken up (CPU = {_totalCpuUsage}%, Memory = {_totalRamUsage}%. Skip");
+                    continue;
+                }
+                lock (mutex)
+                {
+                    processes.Add(new Process(name, execTime, prio, cpu, ram));
+                    Monitor.Pulse(mutex);
+                }
+            }
+
             userSocket.Close();
             isUserConnected = false;
         }
@@ -227,7 +284,7 @@ namespace Server
 
             Console.WriteLine("[Server]: Sending list of processes");
 
-            string msg = PackProcessInfoForSending();
+            string msg = Common.Utilities.PackProcessInfoForSending(processes);
             Console.WriteLine(msg);
             byte[] toSend = Encoding.UTF8.GetBytes(msg);
             _ = userSocket.Send(toSend);
@@ -238,7 +295,6 @@ namespace Server
 
         private static void CommandSpawn(string[] parameters)
         {
-            // TODO
             if (!isUserConnected)
             {
                 Console.WriteLine("[Server]: User is not logged in. Skip");
@@ -324,7 +380,6 @@ namespace Server
 
         private static void CommandSched(string[] parameters)
         {
-            // TODO
             if (!isUserConnected)
             {
                 Console.WriteLine("[Server]: User is not logged in. Skip");
@@ -365,7 +420,6 @@ namespace Server
 
         private static void CommandStart()
         {
-            // TODO
             if (!isUserConnected)
             {
                 Console.WriteLine("[Server]: User is not logged in. Skip");
@@ -396,7 +450,6 @@ namespace Server
 
         private static void CommandStop()
         {
-            // TODO
             if (!isUserConnected)
             {
                 Console.WriteLine("[Server]: User is not logged in. Skip");
@@ -421,6 +474,20 @@ namespace Server
             Console.WriteLine($"[Server]: {msg}");
             byte[] toSend = Encoding.UTF8.GetBytes(msg);
             _ = userSocket.Send(toSend);
+        }
+
+
+
+        private static void CommandTerminate()
+        {
+            if (!isUserConnected)
+            {
+                Console.WriteLine("[Server]: User is not logged in. Skip");
+                return;
+            }
+
+            Console.WriteLine("[Server]: Exiting main loop");
+            isRunning = false;
         }
 
 
@@ -450,18 +517,6 @@ namespace Server
             foreach (var process in processes)
                 memoryUsage += process.MemoryUsage;
             return memoryUsage;
-        }
-
-
-
-        private static string PackProcessInfoForSending()
-        {
-            if (processes.Count <= 0)
-                return "~";
-            string infos = $"{processes[0].Name}:{processes[0].ExecutionTime}:{processes[0].Priority}:{processes[0].CpuUsage}:{processes[0].MemoryUsage}";
-            foreach (var process in processes.Skip(1))
-                infos += $",{process.Name}:{process.ExecutionTime}:{process.Priority}:{process.CpuUsage}:{process.MemoryUsage}";
-            return infos;
         }
 
 

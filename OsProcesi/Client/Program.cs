@@ -27,10 +27,12 @@ namespace Client
             Console.WriteLine("\tlogin (username) (password)");
             Console.WriteLine("\tlogout");
             Console.WriteLine("\tlist");
+            Console.WriteLine("\tpending");
             Console.WriteLine("\tspawn (name) (execTime) (priority) (cpuUage) (memoryUsage)");
             Console.WriteLine("\tsched <roundrobin>/<shortestfirst>");
             Console.WriteLine("\tstart");
             Console.WriteLine("\tstop");
+            Console.WriteLine("\tterminate");
             Console.WriteLine("\texit");
 
 
@@ -63,6 +65,8 @@ namespace Client
                         CommandLogout(command);
                     else if (commandName.Equals("list"))
                         CommandList(command);
+                    else if (commandName.Equals("pending"))
+                        CommandPending(command);
                     else if (commandName.Equals("spawn"))
                         CommandSpawn(command);
                     else if (commandName.Equals("sched"))
@@ -71,6 +75,8 @@ namespace Client
                         CommandStart(command);
                     else if (commandName.Equals("stop"))
                         CommandStop(command);
+                    else if (commandName.Equals("terminate"))
+                        CommandTerminate(command);
                     else if (commandName.Equals("exit"))
                         CommandExit(command);
                     else
@@ -157,7 +163,23 @@ namespace Client
                 Console.WriteLine("[Client]: User is not logged in. Skip");
                 return;
             }
+
+            var parts = command.Split(' ');
+            if (parts.Length != 1)
+            {
+                Console.WriteLine($"[Client]: `list` command expects 1 argument, but {parts.Length - 1} is given");
+                return;
+            }
+
+            string packed = Common.Utilities.PackProcessInfoForSending(pendingProcesses);
+            string msg = $"{command} {packed}";
+            Console.WriteLine(msg);
+            byte[] toSend = Encoding.UTF8.GetBytes(msg);
+            _ = clientSocket.Send(toSend);
+
             clientSocket.Close();
+            isLoggedIn = false;
+            clientSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
         }
 
 
@@ -215,6 +237,33 @@ namespace Client
                 ramUsage += ram;
             }
             Console.WriteLine($"[Client]: Server\'s resource usage: CPU = {cpuUsage}, Memory = {ramUsage}");
+        }
+
+
+
+        private static void CommandPending(string command)
+        {
+            if (!isLoggedIn)
+            {
+                Console.WriteLine("[Client]: User is not logged in. Skip");
+                return;
+            }
+
+            string[] parts = command.Split(' ');
+
+            if (parts.Length != 1)
+            {
+                Console.WriteLine($"[Client]: `pending` command expects 0 arguments, but {parts.Length - 1} is given");
+                return;
+            }
+
+            Console.WriteLine($"[Client]: Number of processes: {pendingProcesses.Count}");
+            for (int i = 0; i < pendingProcesses.Count; i++)
+            {
+                //string[] fields = pendingProcesses[i].Split(':');
+                var process = pendingProcesses[i];
+                Console.WriteLine($"  #{i}: Name = {process.Name}, Execution Time = {process.ExecutionTime}, Priority = {process.Priority}, CPU Usage = {process.CpuUsage}, Memory Usage = {process.MemoryUsage}");
+            }
         }
 
 
@@ -406,6 +455,29 @@ namespace Client
             {
                 Console.WriteLine("[Client]: Server returned error message.");
             }
+        }
+
+
+
+        private static void CommandTerminate(string command)
+        {
+            if (!isLoggedIn)
+            {
+                Console.WriteLine("[Client]: User is not logged in. Skip");
+                return;
+            }
+
+            string[] parts = command.Split(' ');
+
+            if (parts.Length != 1)
+            {
+                Console.WriteLine($"[Client]: `stop` command expects 0 arguments, but {parts.Length - 1} is given");
+                return;
+            }
+
+            byte[] msg = Encoding.UTF8.GetBytes(command);
+            int bytesCount = clientSocket.Send(msg);
+            Console.WriteLine($"[Client]: Sent {bytesCount} bytes");
         }
 
 
