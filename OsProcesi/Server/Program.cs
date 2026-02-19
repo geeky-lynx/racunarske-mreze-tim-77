@@ -26,12 +26,17 @@ namespace Server
         private static bool isUserConnected = false;
         private static double cpuUsage = 0.0,
                               ramUsage = 0.0;
-        private static byte[]  receiveBuffer = new byte[1024];
+        private static byte[] receiveBuffer = new byte[1024];
 
         private static SchedulerMode schedMode = SchedulerMode.NONE;
         private static bool schedulerRunning = true;
         private static bool engineRunning = true;
         private static Mutex mutex = new Mutex();
+
+        
+        private static double maxCpuUsage = 0.0;
+        private static double maxRamUsage = 0.0;
+        private static Process? shortestProcess = null;
 
 
 
@@ -126,6 +131,22 @@ namespace Server
 
             // Server end
             Console.WriteLine("Server has finished");
+
+            
+            Console.WriteLine("\n===== SERVER STATISTICS =====");
+            Console.WriteLine($"Max CPU usage: {maxCpuUsage * 100}%");
+            Console.WriteLine($"Max Memory usage: {maxRamUsage * 100}%");
+
+            if (shortestProcess != null)
+            {
+                Console.WriteLine("Process with shortest execution time:");
+                Console.WriteLine($"Name: {shortestProcess.Name}");
+                Console.WriteLine($"Execution Time: {shortestProcess.ExecutionTime}");
+                Console.WriteLine($"Priority: {shortestProcess.Priority}");
+                Console.WriteLine($"CPU Usage: {shortestProcess.CpuUsage}");
+                Console.WriteLine($"Memory Usage: {shortestProcess.MemoryUsage}");
+            }
+
             registeredUsers.Clear();
             loginSocket.Close();
             //serverSocket.Close();
@@ -275,9 +296,25 @@ namespace Server
 
             lock (mutex)
             {
-                processes.Add(new Process(name, execTime, prio, cpu, ram));
+                var newProcess = new Process(name, execTime, prio, cpu, ram);
+                processes.Add(newProcess);
                 Monitor.Pulse(mutex);
+
+               
+                cpuUsage = GetTotalCpuUsage();
+                ramUsage = GetTotalMemoryUsage();
+
+                if (cpuUsage > maxCpuUsage)
+                    maxCpuUsage = cpuUsage;
+
+                if (ramUsage > maxRamUsage)
+                    maxRamUsage = ramUsage;
+
+                
+                if (shortestProcess == null || newProcess.ExecutionTime < shortestProcess.ExecutionTime)
+                    shortestProcess = newProcess;
             }
+
             Console.WriteLine($"[Server]: {msg}");
             byte[] toSend = Encoding.UTF8.GetBytes(msg);
             _ = userSocket.Send(toSend);
@@ -356,14 +393,14 @@ namespace Server
             {
                 lock (mutex)
                 {
-                    // Pick the next available 
-                    while (schedulerRunning == false || processes.Count < 0)
+                    
+                    while (schedulerRunning == false || processes.Count <= 0)
                         Monitor.Wait(mutex);
 
                     if (schedMode == SchedulerMode.ROUND_ROBIN)
                         _processIndex = GetNextForRoundRobin(_processIndex);
-                    // else if (schedMode == SchedulerMode.SHORTEST_FIRST
-                    //      _processIndex = GetNextForShortestFirst()
+                    else if (schedMode == SchedulerMode.SHORTEST_FIRST) 
+                        _processIndex = GetNextForShortestFirst();
                 }
 
                 Process info = processes[_processIndex];
@@ -373,8 +410,8 @@ namespace Server
 
                 if (schedMode == SchedulerMode.ROUND_ROBIN)
                     DoRoundRobin(_processIndex);
-                // else if (schedMode == SchedulerMode.SHORTEST_FIRST
-                //      DoShortestFirst(_processIndex)
+                else if (schedMode == SchedulerMode.SHORTEST_FIRST) 
+                    DoShortestFirst(_processIndex);
             }
         }
 
@@ -392,6 +429,10 @@ namespace Server
                 lock (mutex)
                 {
                     processes.RemoveAt(processIndex);
+
+                    
+                    cpuUsage = GetTotalCpuUsage();
+                    ramUsage = GetTotalMemoryUsage();
                 }
             }
             else
@@ -401,6 +442,49 @@ namespace Server
                 {
                     processes[processIndex].ExecutionTime -= execTime;
                 }
+            }
+        }
+
+
+
+     
+        private static int GetNextForShortestFirst()
+        {
+            int bestIndex = 0;
+            int bestTime = processes[0].ExecutionTime;
+
+            for (int i = 1; i < processes.Count; i++)
+            {
+                if (processes[i].ExecutionTime < bestTime)
+                {
+                    bestTime = processes[i].ExecutionTime;
+                    bestIndex = i;
+                }
+            }
+
+            return bestIndex;
+        }
+
+
+
+       
+        private static void DoShortestFirst(int processIndex)
+        {
+            Process p;
+            lock (mutex)
+            {
+                p = processes[processIndex];
+            }
+
+            Thread.Sleep(p.ExecutionTime * 1000);
+
+            lock (mutex)
+            {
+                processes.RemoveAt(processIndex);
+
+                
+                cpuUsage = GetTotalCpuUsage();
+                ramUsage = GetTotalMemoryUsage();
             }
         }
 
