@@ -12,6 +12,7 @@ namespace Server
         private static Socket loginSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
         private static Socket serverSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
         private static Socket userSocket;
+        private static List<Socket> userSockets = new List<Socket>();
 
 
         private const int QUANT = 3; // seconds
@@ -52,6 +53,8 @@ namespace Server
             schedulerEngine.Start();
 
             loginSocket.Bind(loginEp);
+            serverSocket.Blocking = false;
+            loginSocket.Blocking = true; // TODO: change
 
             Console.WriteLine($"Server is listening on: {loginEp}");
 
@@ -63,6 +66,7 @@ namespace Server
                 {
                     int byteCount;
                     EndPoint _ep;
+                    //loginSocket.Pro
                     if (isUserConnected == false)
                     {
                         _ep = senderEp;
@@ -200,6 +204,7 @@ namespace Server
             serverSocket.Bind(userEp);
             serverSocket.Listen();
             userSocket = serverSocket.Accept();
+            userSockets.Add(userSocket);
             isUserConnected = true;
         }
 
