@@ -500,19 +500,5 @@ namespace Client
             }
             isRunning = false;
         }
-
-
-
-        // Used when logging out or exiting the program
-        private static string PreparePendingProcessesForSending()
-        {
-            if (pendingProcesses.Count <= 0)
-                return "";
-            var first = pendingProcesses.First();
-            string infos = $"{first.Name}:{first.ExecutionTime}:{first.Priority}:{first.CpuUsage}:{first.MemoryUsage}";
-            foreach (var process in pendingProcesses.Skip(1))
-                infos += $",{process.Name}:{process.ExecutionTime}:{process.Priority}:{process.CpuUsage}:{process.MemoryUsage}";
-            return infos;
-        }
     }
 }
