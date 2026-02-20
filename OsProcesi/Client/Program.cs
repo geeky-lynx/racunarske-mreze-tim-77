@@ -1,6 +1,4 @@
 ﻿using Common.Models;
-using System;
-//using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -23,7 +21,6 @@ namespace Client
         {
             Console.WriteLine("[Client]: Hello, World!");
 
-
             Console.WriteLine("Commands:");
             Console.WriteLine("\tlogin (username) (password)");
             Console.WriteLine("\tlogout");
@@ -35,7 +32,6 @@ namespace Client
             Console.WriteLine("\tstop");
             Console.WriteLine("\tterminate");
             Console.WriteLine("\texit");
-
 
 
             while (isRunning)
@@ -89,7 +85,6 @@ namespace Client
                     Console.WriteLine(exception.ToString());
                 }
             }
-
 
 
             Console.WriteLine("Client has finished");
@@ -269,7 +264,6 @@ namespace Client
             Console.WriteLine($"[Client]: Number of processes: {pendingProcesses.Count}");
             for (int i = 0; i < pendingProcesses.Count; i++)
             {
-                //string[] fields = pendingProcesses[i].Split(':');
                 var process = pendingProcesses[i];
                 Console.WriteLine($"  #{i}: Name = {process.Name}, Execution Time = {process.ExecutionTime}, Priority = {process.Priority}, CPU Usage = {process.CpuUsage}, Memory Usage = {process.MemoryUsage}");
             }
