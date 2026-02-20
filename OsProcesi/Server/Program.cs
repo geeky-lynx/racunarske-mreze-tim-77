@@ -26,8 +26,6 @@ namespace Server
         private static List<Process> processes = new List<Process>();
         private static bool isRunning = true;
         // private static bool isUserConnected = false;
-        private static double cpuUsage = 0.0,
-                              ramUsage = 0.0;
         private static byte[] receiveBuffer = new byte[1024];
 
         private static SchedulerMode schedMode = SchedulerMode.SHORTEST_FIRST;
@@ -67,24 +65,21 @@ namespace Server
             {
                 try
                 {
-                    int byteCount = -1;
-
                     if (loginSocket.Poll(1_000_000, SelectMode.SelectRead))
                     {   
-                        byteCount = loginSocket.ReceiveFrom(receiveBuffer, ref senderEp);
+                        int byteCount = loginSocket.ReceiveFrom(receiveBuffer, ref senderEp);
 
                         string message = Encoding.UTF8.GetString(receiveBuffer, 0, byteCount);
-                        Console.WriteLine($"Received message (length = {byteCount}) from {senderEp}.");
                         if (byteCount <= 0)
+                        {
+                            Console.WriteLine($"Error: Empty command is sent by {senderEp}");
                             continue;
+                        }
+
+                        Console.WriteLine($"Received message (length = {byteCount}) from {senderEp}.");
                         Console.WriteLine($"Message: {message}");
 
                         string[] parts = message.Split(' ');
-
-                        if (parts.Length < 1)
-                        {
-                            Console.WriteLine("Error: Empty command is sent");
-                        }
 
                         string commandName = parts[0].ToLower();
                         string[] parameters = parts.Skip(1).ToArray();
@@ -112,20 +107,19 @@ namespace Server
 
                     foreach (var waiting in waitingSockets)
                     {
-                        byteCount = waiting.Receive(receiveBuffer);
+                        int byteCount = waiting.Receive(receiveBuffer);
 
                         string message = Encoding.UTF8.GetString(receiveBuffer, 0, byteCount);
-                        Console.WriteLine($"Received message (length = {byteCount}) from {userEp}.");
                         if (byteCount <= 0)
+                        {
+                            Console.WriteLine($"Error: Empty command is sent by {senderEp}");
                             continue;
+                        }
+
+                        Console.WriteLine($"Received message (length = {byteCount}) from {userEp}.");
                         Console.WriteLine($"Message: {message}");
 
                         string[] parts = message.Split(' ');
-
-                        if (parts.Length < 1)
-                        {
-                            Console.WriteLine("Error: Empty command is sent");
-                        }
 
                         string commandName = parts[0].ToLower();
                         string[] parameters = parts.Skip(1).ToArray();
@@ -156,51 +150,6 @@ namespace Server
                     }
                     waitingSockets.Clear();
                     erroneousSockets.Clear();
-
-                    
-                    
-                    // string message = Encoding.UTF8.GetString(receiveBuffer, 0, byteCount);
-                    // Console.WriteLine($"Received message (length = {byteCount}) from {_ep}.");
-                    // Console.WriteLine($"Message: {message}");
-
-                    // string[] parts = message.Split(' ');
-
-                    // if (parts.Length < 1)
-                    // {
-                    //     Console.WriteLine("Error: Empty command is sent");
-                    // }
-
-                    // string commandName = parts[0].ToLower();
-                    // string[] parameters = parts.Skip(1).ToArray();
-
-
-                    // Execute commands
-                    // if (commandName.Equals("login"))
-                    //     CommandLogin(parameters);
-
-                    // else if (commandName.Equals("logout"))
-                    //     CommandLogout(parameters);
-
-                    // else if (commandName.Equals("list"))
-                    //     CommandList();
-
-                    // else if (commandName.Equals("spawn"))
-                    //     CommandSpawn(parameters);
-
-                    // else if (commandName.Equals("sched"))
-                    //     CommandSched(parameters);
-
-                    // else if (commandName.Equals("start"))
-                    //     CommandStart();
-
-                    // else if (commandName.Equals("stop"))
-                    //     CommandStop();
-
-                    // else if (commandName.Equals("terminate"))
-                    //     CommandTerminate();
-
-                    // else
-                    //     CommandNotFound(commandName);
                 }
                 catch (SocketException exception)
                 {
@@ -235,18 +184,16 @@ namespace Server
             registeredUsers.Clear();
             loginSocket.Close();
             serverSocket.Close();
+            foreach (var socket in userSockets)
+                socket.Close();
+            foreach (var socket in erroneousSockets)
+                socket.Close();
         }
 
 
 
         private static void CommandLogin(string[] parameters)
         {
-            // if (isUserConnected)
-            // {
-            //     Console.WriteLine("User is already logged in. Skip this command");
-            //     return;
-            // }
-
             if (parameters.Length != 2)
             {
                 string _msg = $"[Server]: Error: Login command requires 2 parameters, but {parameters.Length} is given instead";
@@ -301,12 +248,6 @@ namespace Server
 
         private static void CommandLogout(Socket userSocket, string[] parameters)
         {
-            // if (!isUserConnected)
-            // {
-            //     Console.WriteLine("[Server]: No user is logged in");
-            //     return;
-            // }
-
             if (parameters.Length != 1)
             {
                 Console.WriteLine($"[Server]: `spawn` command expects 1 argument, but {parameters.Length} is given");
@@ -363,6 +304,7 @@ namespace Server
             }
 
             userSocket.Close();
+            userSockets.Remove(userSocket);
             // isUserConnected = false;
         }
 
@@ -370,12 +312,6 @@ namespace Server
 
         private static void CommandList(Socket userSocket)
         {
-            // if (!isUserConnected)
-            // {
-            //     Console.WriteLine("[Server]: User is not logged in. Skip");
-            //     return;
-            // }
-
             Console.WriteLine("[Server]: Sending list of processes");
 
             string msg = Common.Utilities.PackProcessInfoForSending(processes);
@@ -389,13 +325,6 @@ namespace Server
 
         private static void CommandSpawn(Socket userSocket, string[] parameters)
         {
-            // if (!isUserConnected)
-            // {
-            //     Console.WriteLine("[Server]: User is not logged in. Skip");
-            //     return;
-            // }
-
-
             if (parameters.Length != 5)
             {
                 Console.WriteLine($"[Server]: `spawn` command expects 5 arguments, but {parameters.Length} is given");
@@ -451,8 +380,8 @@ namespace Server
                     Monitor.Pulse(mutex);
                 }
 
-                cpuUsage = GetTotalCpuUsage();
-                ramUsage = GetTotalMemoryUsage();
+                double cpuUsage = GetTotalCpuUsage();
+                double ramUsage = GetTotalMemoryUsage();
 
                 if (cpuUsage > maxCpuUsage)
                     maxCpuUsage = cpuUsage;
@@ -474,13 +403,6 @@ namespace Server
 
         private static void CommandSched(Socket userSocket, string[] parameters)
         {
-            // if (!isUserConnected)
-            // {
-            //     Console.WriteLine("[Server]: User is not logged in. Skip");
-            //     return;
-            // }
-
-
             if (parameters.Length != 1)
             {
                 Console.WriteLine($"[Server]: `spawn` command expects 1 argument, but {parameters.Length} is given");
@@ -514,12 +436,6 @@ namespace Server
 
         private static void CommandStart(Socket userSocket)
         {
-            // if (!isUserConnected)
-            // {
-            //     Console.WriteLine("[Server]: User is not logged in. Skip");
-            //     return;
-            // }
-
             string msg;
             if (schedulerRunning == true)
             {
@@ -544,12 +460,6 @@ namespace Server
 
         private static void CommandStop(Socket userSocket)
         {
-            // if (!isUserConnected)
-            // {
-            //     Console.WriteLine("[Server]: User is not logged in. Skip");
-            //     return;
-            // }
-
             string msg;
             if (schedulerRunning == false)
             {
@@ -574,12 +484,6 @@ namespace Server
 
         private static void CommandTerminate()
         {
-            // if (!isUserConnected)
-            // {
-            //     Console.WriteLine("[Server]: User is not logged in. Skip");
-            //     return;
-            // }
-
             Console.WriteLine("[Server]: Exiting main loop");
             isRunning = false;
         }
@@ -680,14 +584,10 @@ namespace Server
 
             Thread.Sleep(p.ExecutionTime * 1000);
 
-            Console.WriteLine($"[SCHEDULER]: The process with name \'{processes[processIndex]}\' has finished. Removing from queue");
+            Console.WriteLine($"[SCHEDULER]: The process with name \'{processes[processIndex].Name}\' has finished. Removing from queue");
             lock (mutex)
             {
                 processes.RemoveAt(processIndex);
-
-                
-                cpuUsage = GetTotalCpuUsage();
-                ramUsage = GetTotalMemoryUsage();
             }
         }
 
@@ -707,19 +607,15 @@ namespace Server
             Thread.Sleep(amountToSleep * 1_000);
             if (execTime < QUANT)
             {
-                Console.WriteLine($"[SCHEDULER]: The process with name \'{processes[processIndex]}\' has finished. Removing from queue");
+                Console.WriteLine($"[SCHEDULER]: The process with name \'{processes[processIndex].Name}\' has finished. Removing from queue");
                 lock (mutex)
                 {
                     processes.RemoveAt(processIndex);
-
-
-                    cpuUsage = GetTotalCpuUsage();
-                    ramUsage = GetTotalMemoryUsage();
                 }
             }
             else
             {
-                Console.WriteLine($"[SCHEDULER]: The process with name \'{processes[processIndex]}\' has done its turn. Now it\'s paused, waiting its turn again");
+                Console.WriteLine($"[SCHEDULER]: The process with name \'{processes[processIndex].Name}\' has done its turn. Now it\'s paused, waiting its turn again");
                 lock (mutex)
                 {
                     processes[processIndex].ExecutionTime -= amountToSleep;
